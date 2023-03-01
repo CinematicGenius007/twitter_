@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 2rem;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            gap: 1rem;
+        }
+
+        form, #home-link, #heading {
+            display: flex;
+            flex-direction: column;
+            width: 300px;
+            margin: 0 auto;
+        }
+
+        form > div {
+            display: flex;
+            flex-direction: column;
+            margin: 10px 0;
+        }
+
+        form > div > label {
+            margin-bottom: 5px;
+        }
+
+        form > div > input {
+            padding: 5px;
+        }
+
+        form > div > button {
+            padding: 5px;
+        }
+
+        form > div > img {
+            display: none;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="home-link">
+        <a href="/">Home</a>
+    </div>
+
+    <h1 id="heading">Login</h1>
+
+    <div>
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div>
+                <p><%= error %></p>
+            </div>
+        <% } %>
+    </div>
+
+    <form method="POST">
+        <div>
+            <label for="handle">Handle</label>
+            <input type="text" name="handle" id="handle">
+        </div>
+        <div>
+            <label for="password">Password</label>
+            <input type="password" name="password" id="password">
+        </div>
+        <div>
+            <button type="submit">Login</button>
+        </div>
+    </form>
+</body>
+</html>

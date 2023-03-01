@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 2rem;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            gap: 1rem;
+        }
+
+        form, #home-link, #heading {
+            display: flex;
+            flex-direction: column;
+            width: 300px;
+            margin: 0 auto;
+        }
+
+        form > div {
+            display: flex;
+            flex-direction: column;
+            margin: 10px 0;
+        }
+
+        form > div > label {
+            margin-bottom: 5px;
+        }
+
+        form > div > input {
+            padding: 5px;
+        }
+
+        form > div > button {
+            padding: 5px;
+        }
+
+        form > div > img {
+            display: none;
+            margin-top: 5px;
+        }
+
+        
+    </style>
+</head>
+<body>
+    <div id="home-link">
+        <a href="/">Home</a>
+    </div>
+
+    <h1 id="heading">Register</h1>
+    
+
+    <div>
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div>
+                <p><%= error %></p>
+            </div>
+        <% } %>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" action="/register">
+        <div>
+            <label for="name">Name</label>
+            <input type="text" name="name" id="name" placeholder="What should we call you?">
+        </div>
+        <div>
+            <label for="handle">Handle</label>
+            <input type="text" name="handle" id="handle" placeholder="Cool nickname">
+        </div>
+        <div>
+            <label for="profile">Profile</label>
+            <input type="file" name="profile" id="profile" accept="image/*">
+
+            <img src="" alt="Profile" width="100%">
+        </div>
+        <div>
+            <label for="password">Password</label>
+            <input type="password" name="password" id="password" placeholder="********">
+        </div>
+        <div>
+            <label for="confirmPassword">Confirm Password</label>
+            <input type="password" name="confirmPassword" id="confirmPassword" placeholder="********">
+        </div>
+        <div>
+            <button type="submit">Register</button>
+        </div>
+    </form>
+
+    <script>
+        // Showing image preview
+        const profile = document.querySelector('input[type="file"]');
+
+        profile.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+
+                reader.addEventListener('load', (event) => {
+                    document.querySelector('img').style.display = 'block';
+                    document.querySelector('img').src = event.target.result;
+                });
+
+                reader.readAsDataURL(file);
+            }
+        });
+
+    </script>
+</body>
+</html>
