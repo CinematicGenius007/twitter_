@@ -1,3 +1,4 @@
 node_modules
 package-lock.json
-public/images
+public/images/*
+!public/images/photo-1511367461989-f85a21fda167.jpeg
