@@ -42,3 +42,30 @@ CREATE TABLE `replies` (
   CONSTRAINT `fk_reply_user` FOREIGN KEY (`user`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_tweet` FOREIGN KEY (`tweet`) REFERENCES `tweets` (`id`) ON DELETE CASCADE
 );
+
+DELIMITER $$
+
+-- Trigger to update the likes count when a new record is inserted into the likes table
+CREATE TRIGGER insert_like_trigger
+AFTER INSERT
+ON likes
+FOR EACH ROW
+BEGIN
+    UPDATE tweets
+    SET likes = likes + 1
+    WHERE id = NEW.tweet;
+END$$
+
+-- Trigger to update the likes count when a record is deleted from the likes table
+CREATE TRIGGER delete_like_trigger
+AFTER DELETE
+ON likes
+FOR EACH ROW
+BEGIN
+    UPDATE tweets
+    SET likes = likes - 1
+    WHERE id = OLD.tweet;
+END$$
+
+DELIMITER ;
+
