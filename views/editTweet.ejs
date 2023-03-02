@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
+    <title>Edit Tweet</title>
 
     <link rel="stylesheet" href="https://kit-pro.fontawesome.com/releases/v5.15.4/css/pro.min.css">
 
@@ -114,7 +114,7 @@
             flex: 1;
             box-sizing: border-box;
             max-width: 38rem;
-            padding: 0 1rem;
+            padding: 1rem;
         }
 
         #backToHome {
@@ -286,125 +286,6 @@
         #tweet-media {
             display: none;
         }
-
-        #tweet-list {
-            padding: 1rem;
-            box-sizing: border-box;
-        }
-
-        .individual-tweet {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            text-decoration: none;
-            color: black;
-            background-color: #efefef;
-            padding: 1rem 1.5rem;
-            border-radius: 0.4rem;
-            margin-bottom: 2.5rem;
-            transition: background-color 0.2s ease-in-out;
-        }
-
-        .individual-tweet:hover {
-            background-color: #e0e0e0;
-        }
-
-        .tweet-meta {
-            display: flex;
-            gap: 1rem;
-            align-items: self-start;
-        }
-
-        .tweet-meta > img {
-            width: 2.5rem;
-            height: 2.5rem;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-
-        .tweet-owner {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .tweet-owner > h4 {
-            font-size: 1rem;
-            font-weight: 400;
-            margin: 0;
-        }
-
-        .tweet-owner > h6 {
-            font-size: 0.75rem;
-            font-weight: 400;
-            font-style: italic;
-            margin: 0;
-        }
-
-        .dot-separator {
-            font-size: 1rem;
-            font-weight: 400;
-            margin: 0;
-        }
-
-        .tweet-meta .timestamp {
-            margin: 0;
-        }
-
-        .individual-tweet > p {
-            font-size: 1.25rem;
-            font-weight: 400;
-            margin: 0.25rem 1rem 0 3.5rem;
-            word-wrap: break-word;
-            white-space: pre-wrap;
-        }
-
-        .tweet-media {
-            margin: 0.25rem 1rem 0 3.5rem;
-            border-radius: 0.5rem;
-        }
-
-        .tweet-likes-container {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            margin: 0.25rem 1rem 0 3.5rem;
-            position: relative;
-        }
-
-        .tweet-like-button {
-            font-size: 1rem;
-            font-weight: 400;
-            border: none;
-            outline: none;
-            color: black;
-            background-color: transparent;
-            cursor: pointer;
-            transition: color 0.2s ease-in-out;
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            padding: 0.2rem;
-        }
-
-        .tweet-like-button:hover {
-            color: #3e3e3e;
-        }
-
-        /* making the like button red when it is liked */
-        .tweet-like-button.liked {
-            color: #e02424;
-        }
-
-        .tweet-like-button.liked:hover {
-            color: #c01414;
-        }
-
-        .tweet-likes-count {
-            font-size: 0.75rem;
-            font-weight: 400;
-            margin: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
     </style>
 </head>
 <body>
@@ -421,81 +302,48 @@
                 </div>
             </a>
             <div id="home-links">
-                <a id="profile-page" href="/user/<%= user.id %>">Profile</a>
+                <a id="profile-page" href="/user">Profile</a>
                 <a id="logout-button" href="/logout">Logout</a>
             </div>
         </div>
     </div>
 
     <div id="main-content">
+        <a id="backToHome" href="/home"><i class="fas fa-long-arrow-left"></i><span>Home</span></a>
+
         <div id="form-container">
             <img id="new-tweet-profile" src="/images/<%= user.profile %>" alt="profile-pic" />
-            <form method="POST" enctype="multipart/form-data" action="/createTweet">
+            <form method="POST" enctype="multipart/form-data" action="/editTweet/<%= tweet.id %>">
                 <!-- <label for="tweet"></label> -->
                 <!-- <textarea name="tweet" id="tweet" cols="25" rows="4" placeholder="What's happening?" maxlength="200"></textarea> -->
-                <div class="editable" contenteditable="true" data-placeholder="What's happening?" maxLength="400" ></div>
-                <input type="hidden" name="tweet" id="tweet" maxlength="400">
+                <div class="editable" contenteditable="true" data-placeholder="What's happening?" maxLength="400" ><%= tweet.tweet %></div>
+                <input type="hidden" name="tweet" id="tweet" maxlength="400" value="<%= tweet.tweet %>">
                 <div id="tweet-media-container">
                     <button id="tweet-media-remover" type="button"><i class="far fa-times"></i></button>
-                    <img id="tweet-media-handler" />
+                    <img id="tweet-media-handler" <% if (tweet.media) { %> src="/images/<%= tweet.media %>" <% } %> />
                 </div>
                 <div id="tweet-info-controls">
                     <div id="tweet-media-controls">
-                        <button id="new-tweet-button" type="submit">Tweet</button>
+                        <button id="new-tweet-button" type="submit">Update</button>
                         <label for="tweet-media" tabindex="0">
                             <i class="fas fa-cloud-upload"></i>
                             <input type="file" name="tweet-media" id="tweet-media" accept="image/*" />
+                            <input type="hidden" name="tweetMediaRemoved" id="tweet-media-removed" value="<% if (tweet.media) { %>false<% } else { %>true<% } %>">
                         </label>
                     </div>
-                    <div id="tweet-length-container"><span id="tweet-length-value">0</span> / 400</div>
+                    <div id="tweet-length-container"><span id="tweet-length-value"><%= tweet.tweet.length %></span> / 400</div>
                 </div>
             </form>
-        </div>
-
-        <div style="padding: 1rem;">
-            <hr>
-        </div>
-
-        <div id="tweet-list">
-            <% tweets.forEach(tweet => { %>
-                <!-- <div> -->
-                    <!--  It's structure is like first div contains user profile (if not default), their name, their handle and the time and in the next line the tweet itself and at the end the like button and this whole thing is wrapped inside an anchor tag -->
-
-                    <a class="individual-tweet" href="/tweet/<%= tweet.id %>" data-index="<%= tweet.id %>">
-                        <div class="tweet-meta">
-                            <% if (typeof tweet.profile !== 'undefined' && tweet.profile) { %>
-                                <img src="/images/<%= tweet.profile %>" alt="profile-pic">
-                            <% } %>
-                            <div class="tweet-owner" data-link="<%= tweet.user %>">
-                                <h4><%= tweet.name %></h3>
-                                <h6><%= tweet.handle %></h5>
-                            </div>
-
-                            <!-- a dot style separator -->
-
-                            <div class="dot-separator">&middot;</div>
-
-                            <h5 class="timestamp"><%= tweet.timestamp %></h5>
-                        </div>
-                        <p><%= tweet.tweet %></p>
-
-                        <% if (tweet.media) { %>
-                            <img class="tweet-media" src="/images/<%= tweet.media %>" />
-                        <% } %>
-
-                        <div class="tweet-likes-container">
-                            <button class="tweet-like-button<% if (tweet.is_liked) { %> liked<% } %>">
-                                <i class="fas fa-thumbs-up"></i>
-                                <span class="tweet-likes-count"><%= tweet.likes %></span>
-                            </button>
-                        </div>
-                    </a>
-                <!-- </div> -->
-            <% }) %>
         </div>
     </div>
 
     <script>
+        window.onload = () => {
+            if (document.querySelector('#tweet-media-handler').src) {
+                document.querySelector('#tweet-media-container').style.display = 'block';
+            }
+        }
+
         // getting the editable div
         const editable = document.querySelector('.editable');
 
@@ -557,6 +405,7 @@
                 reader.addEventListener('load', (event) => {
                     document.querySelector('div#tweet-media-container').style.display = 'block';
                     document.querySelector('img#tweet-media-handler').src = event.target.result;
+                    document.querySelector('input#tweet-media-removed').value = 'false';
                 });
 
                 reader.readAsDataURL(file);
@@ -569,56 +418,7 @@
             document.querySelector('div#tweet-media-container').style.display = 'none';
             document.querySelector('img#tweet-media-handler').src = '';
             document.querySelector('input[type="file"]').value = '';
-        });
-
-        /*editable.addEventListener('focus', () => {
-            if (editable.classList.contains('placeholder')) {
-                editable.textContent = '';
-                editable.classList.remove('placeholder');
-            }
-        });*/
-
-
-        const likeButtons = document.querySelectorAll('.tweet-like-button');
-        likeButtons.forEach(button => {
-            button.addEventListener('click', (event) => {
-                // not firing the click event on the parent anchor tag
-                // event.stopPropagation();
-                event.preventDefault();
-                
-                button.classList.toggle('liked');
-
-                // getting the tweet id from the parent anchor tag and then sending an authenticated request to the server to update the likes count
-                const tweetId = button.parentElement.parentElement.getAttribute('data-index');
-
-                fetch(`/like/${tweetId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        liked: button.classList.contains('liked')
-                    })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        // updating the likes count
-                        button.querySelector('.tweet-likes-count').textContent = data.likes;
-                    })
-                    .catch(error => {
-                        console.log(error);
-                    });
-            });
-        });
-
-        const tweetOwners = document.querySelectorAll('.tweet-owner');
-
-        tweetOwners.forEach(owner => {
-            owner.addEventListener('click', (event) => {
-                event.preventDefault();
-                const link = owner.getAttribute('data-link');
-                window.location.href = `/user/${link}`;
-            });
+            document.querySelector('input#tweet-media-removed').value = 'true';
         });
     </script>
 </body>

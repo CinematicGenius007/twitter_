@@ -62,7 +62,6 @@
         }
 
         form > div > img {
-            display: none;
             margin-top: 5px;
         }
 
@@ -106,7 +105,7 @@
         <a class="back-to-home" href="/"><i class="fas fa-long-arrow-left"></i><span>Home</span></a>
     </div>
 
-    <h1 id="heading">Register</h1>
+    <h1 id="heading">Update Profile</h1>
     
 
     <div>
@@ -117,14 +116,14 @@
         <% } %>
     </div>
 
-    <form method="POST" enctype="multipart/form-data" action="/register">
+    <form method="POST" enctype="multipart/form-data" action="/profile">
         <div>
             <label for="name">Name</label>
-            <input type="text" name="name" id="name" placeholder="What should we call you?">
+            <input type="text" name="name" id="name" placeholder="What should we call you?" value="<%= user.name %>">
         </div>
         <div>
             <label for="handle">Handle</label>
-            <input type="text" name="handle" id="handle" placeholder="Cool nickname">
+            <input type="text" name="handle" id="handle" placeholder="Cool nickname" value="<%= user.handle %>">
         </div>
         <div>
             <label for="profile" tabIndex="0">
@@ -133,18 +132,18 @@
                 <input type="file" name="profile" id="profile" accept="image/*" />
             </label>
 
-            <img id="profile-image" src="" alt="Profile" width="100%">
+            <img id="profile-image" src="/images/<%= user.profile %>" alt="Profile" width="100%">
         </div>
         <div>
             <label for="password">Password</label>
-            <input type="password" name="password" id="password" placeholder="********">
+            <input type="password" name="password" id="password" placeholder="********" value="">
         </div>
         <div>
-            <label for="confirmPassword">Confirm Password</label>
-            <input type="password" name="confirmPassword" id="confirmPassword" placeholder="********">
+            <label for="password">Change Password</label>
+            <input type="password" name="new-password" id="newPassword" placeholder="********" value="">
         </div>
         <div>
-            <button type="submit">Register</button>
+            <button type="submit">Update</button>
         </div>
     </form>
 

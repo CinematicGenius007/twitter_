@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
 
+    <link rel="stylesheet" href="https://kit-pro.fontawesome.com/releases/v5.15.4/css/pro.min.css">
+
     <style>
         body {
             margin: 0;
@@ -17,6 +19,18 @@
             justify-content: center;
             height: 100vh;
             gap: 1rem;
+        }
+
+        .back-to-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 2rem;
+            text-decoration: none;
+            padding: 0.4rem 1rem;
+            color: black;
+            font-size: 1.1rem;
+            transition: color 0.2s ease-in-out;
+            width: max-content;
         }
 
         form, #home-link, #heading {
@@ -37,22 +51,29 @@
         }
 
         form > div > input {
-            padding: 5px;
+            padding: 0.3rem;
+            border: 1px solid #ccc;
+            border-radius: 0.2rem;
         }
 
-        form > div > button {
-            padding: 5px;
+        button[type="submit"] {
+            background-color: #bbb;
+            color: black;
+            border: none;
+            border-radius: 0.2rem;
+            padding: 0.4rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
         }
 
-        form > div > img {
-            display: none;
-            margin-top: 5px;
+        button[type="submit"]:hover {
+            background-color: #aaa;
         }
     </style>
 </head>
 <body>
     <div id="home-link">
-        <a href="/">Home</a>
+        <a class="back-to-home" href="/"><i class="fas fa-long-arrow-left"></i><span>Home</span></a>
     </div>
 
     <h1 id="heading">Login</h1>
