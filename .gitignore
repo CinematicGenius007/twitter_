@@ -12,8 +12,5 @@ legacy/api-hono-sqlite/data/
 legacy/api-hono-sqlite/uploads/*
 !legacy/api-hono-sqlite/uploads/.gitignore
 
-# Convex codegen output
-apps/web/convex/_generated/
-
 .env
 .env.local
