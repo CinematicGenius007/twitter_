@@ -1,0 +1,35 @@
+@import "tailwindcss";
+@import "@fontsource/alex-brush";
+@import "@fontsource/playfair-display/400.css";
+@import "@fontsource/playfair-display/700.css";
+@import "@fontsource/lora/400.css";
+@import "@fontsource/lora/600.css";
+@import "./styles/tokens.css";
+
+@theme {
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-ink: var(--ink);
+  --color-ink-faded: var(--ink-faded);
+  --color-rule: var(--rule);
+  --color-accent: var(--accent);
+  --color-accent-faded: var(--accent-faded);
+
+  --font-display: var(--font-display);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+
+  --text-xs: var(--text-xs);
+  --text-sm: var(--text-sm);
+  --text-base: var(--text-base);
+  --text-lg: var(--text-lg);
+  --text-xl: var(--text-xl);
+  --text-2xl: var(--text-2xl);
+}
+
+body {
+  margin: 0;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+}

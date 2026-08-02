@@ -1,4 +1,16 @@
-node_modules
-package-lock.json
-public/images/*
-!public/images/photo-1511367461989-f85a21fda167.jpeg
+node_modules/
+dist/
+
+# sqlite db files (local-only, not committed)
+apps/api/data/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
+# uploaded media (local-only)
+apps/api/uploads/*
+!apps/api/uploads/.gitignore
+
+.env
+.env.local

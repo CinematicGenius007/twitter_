@@ -1,0 +1,29 @@
+/*
+  Design tokens — source of truth for color/type/scale.
+  See ../../docs/DESIGN.md for the full rationale. Tailwind's theme (in index.css)
+  extends FROM these variables; don't redefine colors inline in components or
+  duplicate hex values in tailwind config.
+*/
+:root {
+  /* Color */
+  --paper: #f4ecd8;
+  --paper-raised: #ebe0c6;
+  --ink: #3a2f1e;
+  --ink-faded: #6b5d47;
+  --rule: #c9b98f;
+  --accent: #7a1f2b;
+  --accent-faded: #a8555f;
+
+  /* Type scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.5rem;
+
+  /* Fonts — see docs/DESIGN.md §1 for role rules (display font is masthead-only) */
+  --font-display: 'Alex Brush', cursive;
+  --font-heading: 'Playfair Display', serif;
+  --font-body: 'Lora', serif;
+}
