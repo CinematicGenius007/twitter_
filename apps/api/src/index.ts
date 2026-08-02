@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import auth from "./routes/auth";
 import feed from "./routes/feed";
 import hashtags from "./routes/hashtags";
+import media from "./routes/media";
 import tweets from "./routes/tweets";
 import users from "./routes/users";
 import type { AppEnv } from "./types";
@@ -15,6 +16,7 @@ app.route("/api/tweets", tweets);
 app.route("/api/feed", feed);
 app.route("/api/users", users);
 app.route("/api/hashtags", hashtags);
+app.route("/api/media", media);
 
 export default {
   port: process.env.PORT ?? 3001,

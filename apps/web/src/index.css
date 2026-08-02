@@ -1,35 +1,192 @@
 @import "tailwindcss";
-@import "@fontsource/alex-brush";
+@import "@fontsource/pinyon-script";
 @import "@fontsource/playfair-display/400.css";
+@import "@fontsource/playfair-display/500.css";
 @import "@fontsource/playfair-display/700.css";
-@import "@fontsource/lora/400.css";
-@import "@fontsource/lora/600.css";
+@import "@fontsource/playfair-display/900.css";
+@import "@fontsource/playfair-display/400-italic.css";
+@import "@fontsource/courier-prime/400.css";
+@import "@fontsource/courier-prime/700.css";
+@import "@fontsource/courier-prime/400-italic.css";
 @import "./styles/tokens.css";
 
 @theme {
   --color-paper: var(--paper);
-  --color-paper-raised: var(--paper-raised);
+  --color-paper-aged: var(--paper-aged);
+  --color-paper-bright: var(--paper-bright);
   --color-ink: var(--ink);
-  --color-ink-faded: var(--ink-faded);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
   --color-rule: var(--rule);
-  --color-accent: var(--accent);
-  --color-accent-faded: var(--accent-faded);
+  --color-rule-faint: var(--rule-faint);
+  --color-dark: var(--dark);
+  --color-dark-soft: var(--dark-soft);
+  --color-dark-text: var(--dark-text);
+  --color-seal: var(--seal);
+  --color-seal-bright: var(--seal-bright);
+  --color-indigo: var(--indigo);
+  --color-indigo-bright: var(--indigo-bright);
 
+  --font-wordmark: var(--font-wordmark);
   --font-display: var(--font-display);
-  --font-heading: var(--font-heading);
   --font-body: var(--font-body);
 
+  --text-2xs: var(--text-2xs);
   --text-xs: var(--text-xs);
   --text-sm: var(--text-sm);
   --text-base: var(--text-base);
   --text-lg: var(--text-lg);
   --text-xl: var(--text-xl);
   --text-2xl: var(--text-2xl);
+  --text-3xl: var(--text-3xl);
+
+  --radius-sheet: var(--radius);
+  --shadow-press: var(--press);
+  --shadow-lift-1: var(--lift-1);
+  --shadow-lift-2: var(--lift-2);
+  --shadow-plate: var(--plate);
+}
+
+/* ---------------------------------------------------------------- base */
+
+html {
+  background-color: var(--paper);
 }
 
 body {
   margin: 0;
-  background-color: var(--paper);
   color: var(--ink);
   font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Page ground: grain + laid lines + a vignette so the sheet has edges.
+   Fixed attachment keeps the texture still while content scrolls over it,
+   which reads as ink on a stationary sheet rather than a moving backdrop. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: var(--grain), var(--laid),
+    radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(33, 27, 20, 0.13) 100%);
+  background-size: 180px 180px, auto, cover;
+  opacity: 0.55;
+  mix-blend-mode: multiply;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+::selection {
+  background: var(--seal);
+  color: var(--paper-bright);
+}
+
+:focus-visible {
+  outline: 2px solid var(--seal);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+}
+::-webkit-scrollbar-track {
+  background: var(--paper-aged);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--rule);
+  border: 3px solid var(--paper-aged);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------ surfaces */
+
+/* A sheet of paper sitting on the page. */
+.sheet {
+  background-color: var(--paper-bright);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-1);
+}
+
+/* A recessed / older sheet — quoted clippings, insets. */
+.sheet-aged {
+  background-color: var(--paper-aged);
+  border: 1px solid var(--rule);
+}
+
+/* Ledger margin: the ruled red line down the left of a page of accounts
+   paper. It sits at the far left with all content to its right — putting it
+   between the seal and the text would split a unit that reads as one thing.
+   Gives the feed a spine without drawing a box around every item. */
+.ledger-margin {
+  position: relative;
+}
+.ledger-margin::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 9px;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(142, 43, 34, 0.42) 4%,
+    rgba(142, 43, 34, 0.42) 96%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* Torn deckle edge. Applied as a mask so the paper itself is ragged rather
+   than a rectangle with a decorative strip stuck on. */
+.torn-bottom {
+  -webkit-mask-image: var(--torn-mask);
+  mask-image: var(--torn-mask);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* Dashed rule — the inspiration never uses a plain solid 1px line. */
+.rule-dashed {
+  border: 0;
+  border-top: 1px dashed var(--rule);
+}
+
+/* Letterpress type: pressed into the sheet, tiny light edge above. */
+.pressed {
+  text-shadow: 0 1px 0 rgba(255, 252, 244, 0.55);
+}
+
+/* Small-caps UI label — nav, buttons, tabs, column heads. */
+.label {
+  font-family: var(--font-display);
+  font-variant: small-caps;
+  letter-spacing: 0.11em;
+  font-weight: 500;
+}
+
+/* Tabular numerals so counts don't jitter when they tick up. */
+.nums {
+  font-variant-numeric: tabular-nums;
 }

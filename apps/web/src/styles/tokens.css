@@ -1,29 +1,103 @@
 /*
-  Design tokens — source of truth for color/type/scale.
-  See ../../docs/DESIGN.md for the full rationale. Tailwind's theme (in index.css)
-  extends FROM these variables; don't redefine colors inline in components or
-  duplicate hex values in tailwind config.
+  Penny Post — design tokens. Source of truth for colour, type, depth, texture.
+  See ../../docs/DESIGN.md for the reasoning behind each decision.
+
+  Core principle: the CHROME carries the period texture (masthead, footer,
+  page ground, ornament). The CONTENT sits on cleaner, high-contrast paper so
+  a 1000-item feed stays scannable. Ornament lives at edges and corners —
+  never behind running text.
 */
 :root {
-  /* Color */
-  --paper: #f4ecd8;
-  --paper-raised: #ebe0c6;
-  --ink: #3a2f1e;
-  --ink-faded: #6b5d47;
-  --rule: #c9b98f;
-  --accent: #7a1f2b;
-  --accent-faded: #a8555f;
+  /* ---- Ink -------------------------------------------------------------
+     A real value range. The old palette put every element within a few
+     percent of the same beige, which is why nothing read as designed —
+     no depth, no hierarchy, no focal point. */
+  --ink: #211b14;        /* near-black warm — body text, ~13:1 on paper */
+  --ink-soft: #574b3c;   /* secondary text, ~7:1 — still AA at small sizes */
+  --ink-faint: #8a7b66;  /* decorative / disabled only, never running text */
 
-  /* Type scale */
+  /* ---- Paper ---------------------------------------------------------- */
+  --paper: #eae0cc;         /* page ground */
+  --paper-aged: #dfd2b8;    /* recessed surfaces, quoted clippings */
+  --paper-bright: #f5efe1;  /* raised surfaces — cards, inputs, "fresh sheet" */
+  --rule: #c0ae8c;          /* hairlines, borders */
+  --rule-faint: #d3c4a5;
+
+  /* ---- Dark band -------------------------------------------------------
+     The single most important addition. The inspiration works largely
+     because a dark ground anchors the bottom of the page; without it the
+     whole thing floats as undifferentiated beige. */
+  --dark: #1c1712;
+  --dark-soft: #33291f;
+  --dark-text: #cbbb9d;
+
+  /* ---- Two inks, two jobs ---------------------------------------------
+     Red = action + state (seals, likes, stamps, the press).
+     Blue = reference (links, mentions, hashtags).
+     Reads like red and blue ink on a writing desk, and it means a link is
+     never confusable with a button. */
+  --seal: #8e2b22;
+  --seal-bright: #a8382d;
+  --seal-wash: rgba(142, 43, 34, 0.08);
+  --indigo: #2c3e63;
+  --indigo-bright: #3d5478;
+
+  /* ---- Type ------------------------------------------------------------
+     Three families, three non-overlapping jobs:
+       Pinyon Script — the wordmark. Used ONCE per page. Never anywhere else.
+       Playfair Display — headings, names, small-caps UI labels.
+       Courier Prime — all body copy, metadata, numerals. A typewriter face
+         is period-correct (typewriters are 1870s onward), highly legible on
+         screen, and instantly signals "not a default web app". */
+  --font-wordmark: "Pinyon Script", cursive;
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "Courier Prime", "Courier New", monospace;
+
+  --text-2xs: 0.6875rem;
   --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.25rem;
-  --text-xl: 1.75rem;
-  --text-2xl: 2.5rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 3rem;
 
-  /* Fonts — see docs/DESIGN.md §1 for role rules (display font is masthead-only) */
-  --font-display: 'Alex Brush', cursive;
-  --font-heading: 'Playfair Display', serif;
-  --font-body: 'Lora', serif;
+  /* ---- Depth -----------------------------------------------------------
+     Letterpress = tight inset, as if type were pressed into the sheet.
+     Lift = a sheet of paper sitting above the page, warm-toned not grey. */
+  --press: inset 0 1px 0 rgba(255, 252, 244, 0.5), inset 0 -1px 2px rgba(33, 27, 20, 0.12);
+  --lift-1: 0 1px 2px rgba(33, 27, 20, 0.08), 0 2px 6px rgba(33, 27, 20, 0.05);
+  --lift-2: 0 2px 4px rgba(33, 27, 20, 0.1), 0 6px 16px rgba(33, 27, 20, 0.09);
+  --plate: 2px 2px 0 var(--ink); /* hard offset — a printing plate, not a blur */
+
+  /* ---- Texture ---------------------------------------------------------
+     Generated, not bitmaps — stays crisp at any DPI and costs ~1kb.
+     Grain sits at 3-4% opacity; anything heavier fights the text. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* Laid-paper: the faint horizontal chain lines in handmade 19th-c stock */
+  --laid: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 3px,
+    rgba(33, 27, 20, 0.015) 3px,
+    rgba(33, 27, 20, 0.015) 4px
+  );
+
+  /* Ruled writing paper, for composer and letter surfaces */
+  --ruled: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 27px,
+    var(--rule-faint) 27px,
+    var(--rule-faint) 28px
+  );
+
+  /* Deckle/torn edge. Turbulence-displaced rectangle — an organic rag rather
+     than a repeating zigzag, which always reads as a decoration rather than
+     a tear. Used as a mask on a solid-coloured strip, so the paper itself is
+     ragged and no content can be clipped by it. */
+  --torn-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='24' preserveAspectRatio='none'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.035 0.7' numOctaves='3' seed='11'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='13' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3Crect x='-12' y='-12' width='424' height='22' fill='white' filter='url(%23t)'/%3E%3C/svg%3E");
+
+  --radius: 2px; /* paper does not have rounded corners */
 }

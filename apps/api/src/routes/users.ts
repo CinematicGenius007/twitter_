@@ -43,7 +43,16 @@ users.patch("/me", requireAuth, async (c) => {
 
   const fields: Record<string, string | number | null> = {};
   for (const key of ["display_name", "bio", "location", "website", "avatar_url", "header_url"] as const) {
-    if (typeof body?.[key] === "string") fields[key] = body[key].trim();
+    if (typeof body?.[key] !== "string") continue;
+    const value = body[key].trim();
+    // Store a cleared optional field as NULL, not "" — otherwise every
+    // "is this set?" check has to know about two different empty values.
+    // display_name is required, so an empty one is simply ignored.
+    if (key === "display_name") {
+      if (value) fields[key] = value;
+    } else {
+      fields[key] = value || null;
+    }
   }
   if (body && "pinned_tweet_id" in body) {
     const pid = body.pinned_tweet_id;
