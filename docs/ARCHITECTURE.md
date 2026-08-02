@@ -5,6 +5,8 @@
 
 This project is a from-scratch rebuild. Old MySQL/Express/EJS implementation is retired — only the *idea* of Twitter carries forward, not its schema or code. This doc is the source of truth for what "the idea of Twitter" means here, translated into entities.
 
+**Storage layer note (2026-08-02):** the domain model below was originally implemented in SQLite (`apps/api/src/db/schema.sql`, now retired to `legacy/api-hono-sqlite/`) and has since been ported to Convex (`apps/web/convex/schema.ts`) as part of a Clerk+Convex production rewrite. Every entity, relationship, and rule described below still holds — only the storage mechanics changed: `id` columns become Convex's implicit `_id`/`_creationTime`, foreign keys become `v.id("table")` fields with explicit `.index(...)` calls (Convex requires indexes for most queries, unlike SQLite which tolerates table scans at this scale), snake_case columns become camelCase fields, and §5's trigger-based counters become explicit counter updates inside mutations (Convex has no trigger mechanism). Read §5 and §6 below for the specifics that changed.
+
 ## 1. Core principle: Tweet is one polymorphic entity
 
 Real Twitter does not have separate tables for "tweet" and "reply." A reply *is* a tweet with a pointer to its parent. A quote-tweet *is* a tweet with a pointer to the tweet it quotes. This is the single most important structural decision in this rebuild — the old schema's separate `replies` table is explicitly not carried forward.
@@ -72,13 +74,13 @@ Private accounts are explicitly out of scope (§7) — no `is_private` flag, don
 
 Profile is editable by its owner only (`PATCH /api/users/me`, not `PATCH /api/users/:handle`) — `display_name`, `bio`, `location`, `website`, `avatar_url`, `header_url`, `pinned_tweet_id`. `handle` is not editable post-registration in v1 (changing it would break every existing permalink reference by handle — not worth the complexity for a college project; revisit only if asked).
 
-## 5. Counters: triggers, not read-time aggregation
+## 5. Counters: explicit mutation-side maintenance, not triggers
 
-Continuing the pattern already proven in the old project (`insert_like_trigger` / `delete_like_trigger`), all three counters (`likes_count`, `retweets_count`, `replies_count`) are SQLite `AFTER INSERT` / `AFTER DELETE` triggers on their respective source tables, writing to `tweets`. This keeps feed queries to a single `SELECT` with no aggregate joins, which matters more on SQLite (no query planner tricks for hot aggregate joins) than it did on MySQL.
+Originally SQLite `AFTER INSERT`/`AFTER DELETE` triggers. Convex has no trigger mechanism, so all three counters (`likesCount`, `retweetsCount`, `repliesCount`) are maintained by explicit helper calls (`apps/web/convex/lib/counters.ts`) inside the same mutation as the insert/delete that changes them — e.g. `tweets.toggleLike` inserts/deletes the `likes` row and calls `incrementLikeCount`/`decrementLikeCount` in the same function body. This is safe (no lost-update race) because Convex mutations are fully transactional/serializable, unlike a naive read-then-write in a non-transactional system. This keeps feed queries to a single document read with no aggregate joins, same goal the SQLite triggers served.
 
 ## 6. Auth shape
 
-JWT, signed, delivered as an httpOnly cookie (decided in planning — not localStorage, not Authorization header, to avoid XSS token theft). Payload: `{ sub: user_id, handle }`, short expiry + refresh-on-activity, or a fixed longer expiry since this is a local single-user-at-a-time dev project — exact TTL is an implementation call, not an architectural one.
+Clerk (`@clerk/clerk-react`) owns credential storage and session management entirely — no JWT signing, no password hashing, no cookie handling in this codebase. `ConvexProviderWithClerk` bridges Clerk's identity into every Convex function call; `ctx.auth.getUserIdentity()` inside a Convex function returns the caller's Clerk identity (or `null` if unauthenticated). The app's `users` table stores a `clerkId` field (Clerk's `subject`) to map identity → app-level profile row, since Clerk doesn't know about `handle`/`bio`/etc. See `convex/lib/auth.ts`'s `getCurrentUser`/`requireCurrentUser` for the resolution helpers every function uses.
 
 ## 7. Explicitly out of scope — do not build
 
@@ -108,4 +110,4 @@ Both are independent of liking/bookmarking flow — bookmarking a tweet never re
 - Single nullable `media` varchar per tweet (superseded by `tweet_media`, §3).
 
 ---
-_Last updated: 2026-08-02. Added hashtags to v1 scope, profile fields (location/website/pinned_tweet_id) + owner-only edit, explicit never-list for DM/lists/spaces/private-accounts/edit-history, and likes/bookmarks owner-view notes, per user scope decisions._
+_Last updated: 2026-08-02. Storage layer ported from SQLite (`apps/api`, retired to `legacy/api-hono-sqlite/`) to Convex (`apps/web/convex/schema.ts`) as part of a Clerk+Convex production rewrite — see the storage-layer note near the top, and §5/§6 for what changed. Domain model itself (entities, relationships, scope decisions) is unchanged from the prior SQLite-era update: hashtags in v1 scope, profile fields + owner-only edit, never-list for DM/lists/spaces/private-accounts/edit-history, likes/bookmarks owner-view notes._

@@ -1,8 +1,11 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "convex/react";
 import { Paperclip, X, PaperPlaneTilt } from "@phosphor-icons/react";
-import { api } from "../lib/api";
+import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
 import { invalidateAll } from "../lib/invalidate";
+import { mapTweet } from "../lib/mapConvex";
 import type { Tweet } from "../lib/types";
 import { Avatar } from "./Avatar";
 import { Button } from "./Button";
@@ -51,12 +54,25 @@ function Allowance({ used }: { used: number }) {
 
 interface ComposerProps {
   mode?: "tweet" | "reply" | "quote";
-  parentTweetId?: number;
+  parentTweetId?: string;
   quotedTweet?: Tweet;
   placeholder?: string;
   autoFocus?: boolean;
   onSuccess?: (tweet: Tweet) => void;
 }
+
+interface PendingMedia {
+  storageId: Id<"_storage">;
+  kind: "image" | "gif" | "video";
+  previewUrl: string;
+}
+
+const MIME_TO_KIND: Record<string, PendingMedia["kind"]> = {
+  "image/jpeg": "image",
+  "image/png": "image",
+  "image/webp": "image",
+  "image/gif": "gif",
+};
 
 export function Composer({
   mode = "tweet",
@@ -68,10 +84,12 @@ export function Composer({
 }: ComposerProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const generateUploadUrl = useMutation(api.media.generateUploadUrl);
+  const createTweet = useMutation(api.tweets.create);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [body, setBody] = useState("");
-  const [media, setMedia] = useState<{ url: string; kind: string }[]>([]);
+  const [media, setMedia] = useState<PendingMedia[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,15 +106,20 @@ export function Composer({
     e.target.value = "";
     if (!file || media.length >= MAX_MEDIA) return;
 
+    const kind = MIME_TO_KIND[file.type];
+    if (!kind) {
+      setError("Only JPEG, PNG, GIF or WebP images are enclosed.");
+      return;
+    }
+
     setUploading(true);
     setError(null);
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch("/api/media", { method: "POST", body: form });
-      const data = (await res.json()) as { url?: string; kind?: string; error?: string };
-      if (!res.ok || !data.url) throw new Error(data.error ?? "upload failed");
-      setMedia((m) => [...m, { url: data.url!, kind: data.kind ?? "image" }]);
+      const uploadUrl = await generateUploadUrl({});
+      const res = await fetch(uploadUrl, { method: "POST", headers: { "Content-Type": file.type }, body: file });
+      if (!res.ok) throw new Error("upload failed");
+      const { storageId } = (await res.json()) as { storageId: Id<"_storage"> };
+      setMedia((m) => [...m, { storageId, kind, previewUrl: URL.createObjectURL(file) }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't attach that.");
     } finally {
@@ -110,16 +133,16 @@ export function Composer({
     setSubmitting(true);
     setError(null);
     try {
-      const res = await api.post<{ tweet: Tweet }>("/tweets", {
+      const tweet = await createTweet({
         body: body.trim() || undefined,
-        parent_tweet_id: parentTweetId,
-        quoted_tweet_id: quotedTweet?.id,
-        media,
+        parentTweetId: parentTweetId as Id<"tweets"> | undefined,
+        quotedTweetId: quotedTweet?.id as Id<"tweets"> | undefined,
+        media: media.map((m) => ({ storageId: m.storageId, kind: m.kind })),
       });
       setBody("");
       setMedia([]);
       invalidateAll(queryClient);
-      onSuccess?.(res.tweet);
+      onSuccess?.(mapTweet(tweet));
     } catch {
       setError("Couldn't send that. Try again.");
     } finally {
@@ -161,8 +184,8 @@ export function Composer({
           {media.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-3">
               {media.map((m, i) => (
-                <div key={m.url} className="relative bg-paper-bright p-1.5 pb-4 shadow-[var(--lift-1)]">
-                  <img src={m.url} alt="" className="h-24 w-24 object-cover" />
+                <div key={m.storageId} className="relative bg-paper-bright p-1.5 pb-4 shadow-[var(--lift-1)]">
+                  <img src={m.previewUrl} alt="" className="h-24 w-24 object-cover" />
                   <button
                     type="button"
                     onClick={() => setMedia((cur) => cur.filter((_, j) => j !== i))}

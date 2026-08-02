@@ -6,6 +6,7 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { SearchPage } from "./pages/SearchPage";
 import { HashtagPage } from "./pages/HashtagPage";
 import { EditProfilePage } from "./pages/EditProfilePage";
+import { CompleteProfilePage } from "./pages/CompleteProfilePage";
 import { TweetPage } from "./pages/TweetPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { FollowListPage } from "./pages/FollowListPage";
@@ -16,11 +17,12 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<FeedPage />} />
-        <Route path="login" element={<LoginPage />} />
-        <Route path="register" element={<RegisterPage />} />
+        <Route path="login/*" element={<LoginPage />} />
+        <Route path="register/*" element={<RegisterPage />} />
         <Route path="search" element={<SearchPage />} />
         <Route path="hashtag/:tag" element={<HashtagPage />} />
         <Route path="settings/profile" element={<EditProfilePage />} />
+        <Route path="complete-profile" element={<CompleteProfilePage />} />
         <Route path=":handle/status/:id" element={<TweetPage />} />
         <Route path=":handle/readers" element={<FollowListPage kind="followers" />} />
         <Route path=":handle/reading" element={<FollowListPage kind="following" />} />

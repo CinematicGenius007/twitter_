@@ -5,9 +5,7 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently -n api,web -c blue,magenta \"bun run --cwd apps/api dev\" \"bun run --cwd apps/web dev\"",
-    "db:init": "bun run --cwd apps/api db:init",
-    "db:seed": "bun run --cwd apps/api db:seed"
+    "dev": "concurrently -n web,convex -c magenta,green \"bun run --cwd apps/web dev\" \"bun run --cwd apps/web convex:dev\""
   },
   "devDependencies": {
     "concurrently": "^9.0.0"

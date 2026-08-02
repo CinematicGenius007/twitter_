@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
+import { useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { invalidateAll } from "../lib/invalidate";
 import { useAuth } from "../lib/auth";
 
 export function FollowButton({ handle, initialFollowing }: { handle: string; initialFollowing: boolean }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const toggleFollow = useMutation(api.follows.toggle);
   const [following, setFollowing] = useState(initialFollowing);
   const [busy, setBusy] = useState(false);
 
@@ -17,8 +19,7 @@ export function FollowButton({ handle, initialFollowing }: { handle: string; ini
     const next = !following;
     setFollowing(next);
     try {
-      if (next) await api.post(`/users/${handle}/follow`);
-      else await api.del(`/users/${handle}/follow`);
+      await toggleFollow({ handle, follow: next });
       invalidateAll(queryClient);
     } catch {
       setFollowing(!next);

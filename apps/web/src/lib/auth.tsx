@@ -1,65 +1,41 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { api, ApiError } from "./api";
+import { useMemo } from "react";
+import { useUser, useClerk } from "@clerk/clerk-react";
+import { useQuery as useConvexQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { mapUser } from "./types";
 import type { User } from "./types";
 
-interface AuthContextValue {
+interface AuthState {
   user: User | null;
   loading: boolean;
-  login: (handle: string, password: string) => Promise<void>;
-  register: (handle: string, displayName: string, password: string) => Promise<void>;
+  signedIn: boolean;
+  onboarded: boolean;
   logout: () => Promise<void>;
-  refresh: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+/** Merges Clerk's signed-in identity with the app-level Convex `users` row
+ *  (handle, bio, etc — fields Clerk doesn't know about). `onboarded` is
+ *  false when Clerk auth succeeded but no users.completeProfile row exists
+ *  yet — callers use this to redirect to /complete-profile. */
+export function useAuth(): AuthState {
+  const { isLoaded, isSignedIn } = useUser();
+  const { signOut } = useClerk();
+  const me = useConvexQuery(api.users.me, isSignedIn ? {} : "skip");
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const loading = !isLoaded || (!!isSignedIn && me === undefined);
+  // Convex's useQuery keeps a stable `me` reference across renders when the
+  // underlying data hasn't changed — memoizing on it keeps `user` stable
+  // too, so effects keyed on `user` (e.g. EditProfilePage's field
+  // initializer) don't refire and clobber in-progress edits every render.
+  const user = useMemo(() => (me ? mapUser(me) : null), [me]);
 
-  async function refresh() {
-    try {
-      const res = await api.get<{ user: User }>("/auth/me");
-      setUser(res.user);
-    } catch {
-      setUser(null);
-    }
-  }
-
-  useEffect(() => {
-    refresh().finally(() => setLoading(false));
-  }, []);
-
-  async function login(handle: string, password: string) {
-    const res = await api.post<{ user: User }>("/auth/login", { handle, password });
-    setUser(res.user);
-  }
-
-  async function register(handle: string, displayName: string, password: string) {
-    const res = await api.post<{ user: User }>("/auth/register", {
-      handle,
-      display_name: displayName,
-      password,
-    });
-    setUser(res.user);
-  }
-
-  async function logout() {
-    await api.post("/auth/logout");
-    setUser(null);
-  }
-
-  return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refresh }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return {
+    user,
+    loading,
+    signedIn: !!isSignedIn,
+    onboarded: !isSignedIn || me !== null,
+    logout: async () => {
+      await signOut();
+    },
+  };
 }
-
-export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
-}
-
-export { ApiError };

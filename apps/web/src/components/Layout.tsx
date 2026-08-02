@@ -1,5 +1,5 @@
-import { Link, NavLink, Outlet, useNavigate } from "react-router";
-import { useState, type FormEvent } from "react";
+import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router";
+import { useEffect, useState, type FormEvent } from "react";
 import { MagnifyingGlass, SignOut, BookmarkSimple, Newspaper } from "@phosphor-icons/react";
 import { useAuth } from "../lib/auth";
 import { Avatar } from "./Avatar";
@@ -57,9 +57,16 @@ function NavItem({ to, children, end }: { to: string; children: React.ReactNode;
 }
 
 export function Layout() {
-  const { user, logout } = useAuth();
+  const { user, logout, signedIn, onboarded, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [q, setQ] = useState("");
+
+  useEffect(() => {
+    if (!loading && signedIn && !onboarded && location.pathname !== "/complete-profile") {
+      navigate("/complete-profile", { replace: true });
+    }
+  }, [loading, signedIn, onboarded, location.pathname, navigate]);
 
   function handleSearch(e: FormEvent) {
     e.preventDefault();

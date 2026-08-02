@@ -75,10 +75,24 @@ Done together as one pass, because the polish items and the design overhaul touc
 
 ## P5 — Possible next (nothing committed to)
 
-- [ ] Feed pagination / "load more" — currently capped at the API's `limit=50` with no continuation UI
-- [ ] Interleave reprints into the Subscriptions feed (query change only, no schema work — see `apps/api/src/routes/feed.ts`)
-- [ ] Upload UI for avatar/banner — the API accepts URLs today, so `/api/media` could feed those fields directly
-- [ ] Automated tests (`bun test`) — everything so far is verified by curl and browser, not by a suite
+- [ ] Feed pagination / "load more" beyond the first page — `feed.publicFeed`/`feed.followingFeed` support Convex cursor pagination already, just no continuation UI
+- [x] Interleave reprints into the Subscriptions feed — done in the Convex rewrite (P6), `feed.followingFeed` merge-sorts authored + retweeted-by-followed tweets
+- [x] Upload UI for avatar/banner — done in the Convex rewrite (P6), `EditProfilePage` uses Convex file storage directly instead of URL fields
+- [ ] Automated tests (`bun test` or similar) — everything so far is verified by browser E2E + Convex dashboard, not by a suite
+
+## P6 — Convex + Clerk rewrite (Depends on: P0-P3) — DONE, verified in-browser
+
+User asked to make the app production-hostable: real auth, security, rate limiting. Decision was a full backend rewrite, not incremental hardening — `apps/api` (Hono/SQLite/custom JWT) replaced entirely by **Convex** (database + serverless functions) and **Clerk** (auth), frontend stays Vite/React, deployed to Vercel. See `docs/LOG.md` for the session narrative and `docs/ARCHITECTURE.md` for the current schema (now `apps/web/convex/schema.ts`, not `schema.sql`).
+
+- [x] `apps/web/convex/schema.ts` — full schema ported from SQL (users/follows/tweets/tweetMedia/likes/retweets/bookmarks/mentions/hashtags/tweetHashtags), Convex indexes replacing SQL indexes, counters maintained explicitly in mutations (no trigger equivalent in Convex)
+- [x] Clerk auth wired: `ClerkProvider` + `ConvexProviderWithClerk` in `main.tsx`, `convex/auth.config.ts` (JWT issuer), lazy `users.completeProfile` onboarding flow (`CompleteProfilePage.tsx`) since Clerk doesn't know handle/bio/etc
+- [x] All read functions: `feed.publicFeed`/`followingFeed` (with retweet interleaving), `hashtags.getByTag`, `tweets.getWithThread`, `users.search/getProfile/getTweets/getLikes/me`, `follows.getFollowers/getFollowing`, `bookmarks.myBookmarks` (owner-only, never accepts a userId arg — privacy rule preserved)
+- [x] All write functions with `v` validators, ownership checks, rate limiting (`@convex-dev/rate-limiter`): `tweets.create/update/remove/toggleLike/toggleRetweet`, `bookmarks.toggle`, `follows.toggle`, `users.completeProfile/updateProfile`, `media.generateUploadUrl`
+- [x] File uploads moved to Convex storage (`ctx.storage.generateUploadUrl`/`getUrl`) — replaces local-disk `Bun.write` and the old `/api/media/*` routes; MIME/size validated server-side against the resolved `storageId`, not the client-supplied file
+- [x] Frontend rewired page-by-page: Feed/Tweet/Profile/FollowList/Hashtag/Search/EditProfile/Composer all on Convex; Login/RegisterPage replaced by Clerk's `<SignIn/>`/`<SignUp/>`, skinned via `lib/clerkAppearance.ts`; kept TanStack Query per user's choice, wrapping one-shot `convexClient.query/mutation` calls rather than double-subscribing via Convex's own reactive hooks
+- [x] `apps/api` moved to `legacy/api-hono-sqlite/` (git history preserved via `git mv`), removed from the dev workflow; root `bun run dev` now runs `apps/web` + `bunx convex dev` concurrently
+- [x] Bug found + fixed during browser verification: `useAuth()`'s `user` object was rebuilt (new reference) on every render since `mapUser()` wasn't memoized, which made `EditProfilePage`'s `useEffect([user])` refire and clobber in-progress edits on every keystroke. Fixed with `useMemo` keyed on the underlying Convex query result.
+- [ ] Deploy to Convex prod + Vercel — not done yet, next up
 
 ---
-_Last updated: 2026-08-02. P0-P3 complete and verified in-browser. Renamed to Penny Post and the design system was rebuilt from scratch in the P3 pass — read `docs/DESIGN.md` before touching any UI._
+_Last updated: 2026-08-02. P0-P3 complete (Hono/SQLite backend, since replaced). P6 Convex + Clerk rewrite complete and verified in-browser — read `docs/ARCHITECTURE.md` for the current (Convex) schema before touching data model or API surface. `apps/api` lives on read-only in `legacy/api-hono-sqlite/` for reference._

@@ -1,16 +1,19 @@
 node_modules/
 dist/
 
-# sqlite db files (local-only, not committed)
-apps/api/data/
+# sqlite db files (local-only, not committed) — legacy Hono/SQLite backend
+legacy/api-hono-sqlite/data/
 *.sqlite
 *.sqlite-journal
 *.sqlite-wal
 *.sqlite-shm
 
-# uploaded media (local-only)
-apps/api/uploads/*
-!apps/api/uploads/.gitignore
+# uploaded media (local-only) — legacy Hono/SQLite backend
+legacy/api-hono-sqlite/uploads/*
+!legacy/api-hono-sqlite/uploads/.gitignore
+
+# Convex codegen output
+apps/web/convex/_generated/
 
 .env
 .env.local

@@ -9,8 +9,7 @@ import { LoadingSheets, ErrorNote, Empty, SectionHead } from "../components/Stat
 export function TweetPage() {
   const { id } = useParams();
   const { user } = useAuth();
-  const tweetId = Number(id);
-  const { data, isLoading, isError } = useTweetThread(tweetId);
+  const { data, isLoading, isError } = useTweetThread(id ?? "");
 
   if (isLoading) return <LoadingSheets count={3} />;
   if (isError || !data) return <ErrorNote>That dispatch is not in the archive.</ErrorNote>;

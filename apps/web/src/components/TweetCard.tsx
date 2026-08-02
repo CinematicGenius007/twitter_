@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "convex/react";
 import {
   ChatTeardrop,
   Repeat,
@@ -11,7 +12,8 @@ import {
   Trash,
   ArrowBendUpLeft,
 } from "@phosphor-icons/react";
-import { api } from "../lib/api";
+import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
 import { invalidateAll } from "../lib/invalidate";
 import { relativeTime, formatCount } from "../lib/format";
 import type { Tweet } from "../lib/types";
@@ -82,6 +84,11 @@ export function TweetCard({
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const toggleLike = useMutation(api.tweets.toggleLike);
+  const toggleRetweet = useMutation(api.tweets.toggleRetweet);
+  const toggleBookmark = useMutation(api.bookmarks.toggle);
+  const removeTweet = useMutation(api.tweets.remove);
+  const updateTweet = useMutation(api.tweets.update);
 
   const [liked, setLiked] = useState(tweet.viewer_liked);
   const [likesCount, setLikesCount] = useState(tweet.likes_count);
@@ -94,6 +101,7 @@ export function TweetCard({
   const [deleted, setDeleted] = useState(false);
 
   const isOwner = user?.id === tweet.author_id;
+  const tweetId = tweet.id as Id<"tweets">;
 
   async function toggle(
     action: "like" | "retweet" | "bookmark",
@@ -104,8 +112,9 @@ export function TweetCard({
     setState(next);
     countSetter?.((n) => (next ? n + 1 : n - 1));
     try {
-      if (next) await api.post(`/tweets/${tweet.id}/${action}`);
-      else await api.del(`/tweets/${tweet.id}/${action}`);
+      if (action === "like") await toggleLike({ tweetId, liked: next });
+      else if (action === "retweet") await toggleRetweet({ tweetId, retweeted: next });
+      else await toggleBookmark({ tweetId, bookmarked: next });
       invalidateAll(queryClient);
     } catch {
       setState(!next);
@@ -115,7 +124,7 @@ export function TweetCard({
 
   async function handleDelete() {
     if (!confirm("Destroy this dispatch? It cannot be recovered.")) return;
-    await api.del(`/tweets/${tweet.id}`);
+    await removeTweet({ tweetId });
     invalidateAll(queryClient);
     setDeleted(true);
   }
@@ -123,7 +132,7 @@ export function TweetCard({
   async function handleEditSave() {
     const text = editBody.trim();
     if (!text || text.length > MAX_LENGTH) return;
-    await api.patch(`/tweets/${tweet.id}`, { body: text });
+    await updateTweet({ tweetId, body: text });
     invalidateAll(queryClient);
     setEditing(false);
   }
@@ -146,6 +155,12 @@ export function TweetCard({
         <p className="flex items-center gap-1.5 text-2xs text-ink-faint mb-1.5 ml-[54px]">
           <ArrowBendUpLeft size={12} weight="light" />
           <span className="label tracking-wider">in reply</span>
+        </p>
+      )}
+      {tweet.retweeted_by_handle && (
+        <p className="flex items-center gap-1.5 text-2xs text-ink-faint mb-1.5 ml-[54px]">
+          <Repeat size={12} weight="light" />
+          <span className="label tracking-wider">reprinted by @{tweet.retweeted_by_handle}</span>
         </p>
       )}
 
@@ -213,17 +228,19 @@ export function TweetCard({
           {/* media — printed photographs, not edge-to-edge banners */}
           {tweet.media.length > 0 && (
             <div className={`mt-3 grid gap-3 ${tweet.media.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
-              {tweet.media.map((m, i) => (
+              {tweet.media
+                .filter((m) => m.url)
+                .map((m, i) => (
                 <a
                   key={m.id}
-                  href={m.url}
+                  href={m.url!}
                   target="_blank"
                   rel="noreferrer"
                   onClick={(e) => e.stopPropagation()}
                   className="block bg-paper-bright p-2 pb-6 shadow-[var(--lift-2)] transition-transform hover:scale-[1.015] hover:rotate-0"
                   style={{ transform: `rotate(${i % 2 === 0 ? -0.8 : 0.9}deg)` }}
                 >
-                  <img src={m.url} alt="" className="w-full object-cover max-h-80" />
+                  <img src={m.url!} alt="" className="w-full object-cover max-h-80" />
                 </a>
               ))}
             </div>
