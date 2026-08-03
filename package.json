@@ -5,7 +5,8 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently -n web,convex -c magenta,green \"bun run --cwd apps/web dev\" \"bun run --cwd apps/web convex:dev\""
+    "dev": "concurrently -n web,convex -c magenta,green \"bun run --cwd apps/web dev\" \"bun run --cwd apps/web convex:dev\"",
+    "dev:web": "bun run --cwd apps/web dev"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"

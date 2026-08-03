@@ -6,6 +6,7 @@ import { ClerkProvider, useAuth as useClerkAuth } from '@clerk/clerk-react'
 import { ConvexProviderWithClerk } from 'convex/react-clerk'
 import './index.css'
 import App from './App.tsx'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { convexClient as convex } from './lib/convexClient'
 
 const queryClient = new QueryClient()
@@ -17,7 +18,9 @@ createRoot(document.getElementById('root')!).render(
       <ConvexProviderWithClerk client={convex} useAuth={useClerkAuth}>
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
-            <App />
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
           </BrowserRouter>
         </QueryClientProvider>
       </ConvexProviderWithClerk>
