@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { SignIn } from "@clerk/clerk-react";
 import { Fleuron } from "../components/Ornament";
 import { clerkAppearance } from "../lib/clerkAppearance";
@@ -16,6 +17,13 @@ export function LoginPage() {
         forceRedirectUrl="/"
         appearance={clerkAppearance}
       />
+      <p className="text-2xs text-ink-faint text-center mt-4">
+        No subscription yet? The paper admits new correspondents{" "}
+        <Link to="/register" className="text-seal hover:underline">
+          by introduction only
+        </Link>
+        .
+      </p>
     </div>
   );
 }

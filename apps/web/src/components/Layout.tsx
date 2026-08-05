@@ -1,6 +1,6 @@
 import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { MagnifyingGlass, SignOut, BookmarkSimple, Newspaper } from "@phosphor-icons/react";
+import { MagnifyingGlass, SignOut, BookmarkSimple, Newspaper, EnvelopeSimple } from "@phosphor-icons/react";
 import { useAuth } from "../lib/auth";
 import { Avatar } from "./Avatar";
 import { TornEdge, Watermark, InkUnderline } from "./Ornament";
@@ -93,6 +93,13 @@ export function Layout() {
               <NavItem to={`/${user.handle}`}>
                 <span className="flex items-center gap-1.5">
                   <BookmarkSimple size={14} weight="light" /> My Desk
+                </span>
+              </NavItem>
+            )}
+            {user && (
+              <NavItem to="/invitations">
+                <span className="flex items-center gap-1.5">
+                  <EnvelopeSimple size={14} weight="light" /> Invitations
                 </span>
               </NavItem>
             )}

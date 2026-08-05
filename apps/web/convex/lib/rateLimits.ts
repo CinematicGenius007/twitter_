@@ -9,4 +9,7 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   toggleAction: { kind: "token bucket", rate: 30, period: MINUTE }, // like/retweet/bookmark/follow
   mediaUpload: { kind: "token bucket", rate: 10, period: MINUTE },
   completeProfile: { kind: "fixed window", rate: 3, period: HOUR }, // anti handle-squatting
+  // Invites cost real email sends against Clerk's own 100/hour instance-wide
+  // limit, so this is deliberately tighter than the app's other buckets.
+  sendInvite: { kind: "fixed window", rate: 5, period: HOUR },
 });

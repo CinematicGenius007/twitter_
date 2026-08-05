@@ -125,6 +125,25 @@ export function useSearchUsers(q: string) {
   });
 }
 
+/** The signed-in member's own invitations and remaining allowance. Owner-
+ *  derived server-side (convex/invites.ts `mine`) — no userId argument. */
+export function useMyInvites(enabled: boolean) {
+  return useQuery({
+    queryKey: ["invites", "mine"],
+    queryFn: async () => await convexClient.query(api.invites.mine, {}),
+    enabled,
+  });
+}
+
+/** Public lookup for the `/invitation/:code` landing page. */
+export function useInvite(code: string) {
+  return useQuery({
+    queryKey: ["invite", code],
+    queryFn: async () => await convexClient.query(api.invites.getByCode, { code }),
+    enabled: !!code,
+  });
+}
+
 export function useHashtag(tag: string) {
   return useQuery({
     queryKey: ["hashtag", tag],

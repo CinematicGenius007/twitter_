@@ -7,6 +7,8 @@ import { SearchPage } from "./pages/SearchPage";
 import { HashtagPage } from "./pages/HashtagPage";
 import { EditProfilePage } from "./pages/EditProfilePage";
 import { CompleteProfilePage } from "./pages/CompleteProfilePage";
+import { InvitationsPage } from "./pages/InvitationsPage";
+import { InvitePage } from "./pages/InvitePage";
 import { TweetPage } from "./pages/TweetPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { FollowListPage } from "./pages/FollowListPage";
@@ -23,6 +25,8 @@ export default function App() {
         <Route path="hashtag/:tag" element={<HashtagPage />} />
         <Route path="settings/profile" element={<EditProfilePage />} />
         <Route path="complete-profile" element={<CompleteProfilePage />} />
+        <Route path="invitations" element={<InvitationsPage />} />
+        <Route path="invitation/:code" element={<InvitePage />} />
         <Route path=":handle/status/:id" element={<TweetPage />} />
         <Route path=":handle/readers" element={<FollowListPage kind="followers" />} />
         <Route path=":handle/reading" element={<FollowListPage kind="following" />} />

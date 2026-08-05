@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, type QueryCtx, type MutationCtx } from "./_generated/server";
 import { getCurrentUser, requireCurrentUser } from "./lib/auth";
+import { findUsableInviteForEmail, getIdentityEmail } from "./lib/invites";
 import { rateLimiter } from "./lib/rateLimits";
 import { serializeTweet } from "./lib/serialize";
 import type { Doc } from "./_generated/dataModel";
@@ -27,7 +28,13 @@ export const me = query({
 
 /** One-time onboarding step after Clerk sign-up: claim a Penny Post handle.
  *  Clerk doesn't know about app-specific profile fields, so this can't be
- *  a silent lazy-create — the user picks a handle explicitly. */
+ *  a silent lazy-create — the user picks a handle explicitly.
+ *
+ *  This is also the app-side half of the invite-only gate (see
+ *  `convex/invites.ts`): no `users` row is ever created without a pending
+ *  invitation for the caller's own Clerk-verified email. Clerk's restricted
+ *  sign-up mode is the first line; this one holds even if that setting is
+ *  wrong, because it's the only code path that can mint a profile. */
 export const completeProfile = mutation({
   args: {
     handle: v.string(),
@@ -42,6 +49,23 @@ export const completeProfile = mutation({
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
       .unique();
     if (existingForIdentity) throw new Error("Profile already completed");
+
+    // Invite gate runs before the rate limiter so someone turned away at the
+    // door gets the real reason rather than "too many attempts". The founder
+    // exception is the empty-deployment case only: the first account has
+    // nobody to be invited by, and once it exists the branch is unreachable.
+    const founder = (await ctx.db.query("users").first()) === null;
+    let invite = null;
+    if (!founder) {
+      const email = await getIdentityEmail(ctx);
+      if (!email) {
+        throw new Error("Penny Post needs a verified email address on your account before you can enrol.");
+      }
+      invite = await findUsableInviteForEmail(ctx, email);
+      if (!invite) {
+        throw new Error("Penny Post is by invitation only, and this address has none outstanding.");
+      }
+    }
 
     await rateLimiter.limit(ctx, "completeProfile", { key: identity.subject, throws: true });
 
@@ -59,12 +83,21 @@ export const completeProfile = mutation({
       .unique();
     if (handleTaken) throw new Error("Handle already taken");
 
+    const now = new Date().toISOString();
     const userId = await ctx.db.insert("users", {
       clerkId: identity.subject,
       handle: normalizedHandle,
       displayName,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
+      invitedBy: invite?.inviterId,
     });
+
+    // Spending the invitation and creating the profile are the same
+    // transaction, so an invitation can never admit two accounts.
+    if (invite) {
+      await ctx.db.patch(invite._id, { status: "accepted", acceptedAt: now, acceptedUserId: userId });
+    }
+
     return await ctx.db.get(userId);
   },
 });

@@ -37,7 +37,7 @@ apps/
       schema.ts     table definitions, indexes
       auth.config.ts  Clerk JWT issuer config
       convex.config.ts  registers @convex-dev/rate-limiter
-      tweets.ts users.ts follows.ts feed.ts hashtags.ts bookmarks.ts media.ts
+      tweets.ts users.ts follows.ts feed.ts hashtags.ts bookmarks.ts media.ts invites.ts
       lib/        shared helpers (auth resolution, counters, mention/hashtag parsing, DTO serialization)
       _generated/ Convex codegen output, gitignored
     src/
@@ -72,11 +72,21 @@ Clerk owns all credentials — no password hashing or JWT signing in this codeba
 
 Clerk doesn't know about app-specific profile fields (handle, bio, etc.), so sign-up isn't fully lazy: after Clerk auth, a user with no `users` row is routed to `/complete-profile` to claim a handle via `users.completeProfile`.
 
+**Sign-up is invite-only** (`convex/invites.ts`, `docs/ARCHITECTURE.md` §9). Clerk's restricted sign-up mode + Clerk invitations are the front door (Clerk sends the email and verifies the address); `users.completeProfile` independently refuses to create a `users` row without a pending invite matching the caller's Clerk-verified email. Keep both — the second one is what makes the rule true regardless of dashboard state. An invitation binds to an **email**, never to the link, so don't add a flow that admits whoever holds a code. The founder exception fires only on a deployment with zero users.
+
 **Bookmarks stay private** — every bookmarks function derives the owner from `ctx.auth` only, never accepts a `userId`/`handle` argument (`convex/bookmarks.ts`). Don't add a bookmarks query/mutation that takes someone else's id as an argument, even for an admin/debug case.
 
 ## 7. Development workflow
 
 `bun install` at root (workspaces). `bun run dev` runs `apps/web`'s Vite dev server and `bunx convex dev` concurrently. Convex needs a one-time interactive login (`bunx convex dev` from `apps/web`) to create/link a deployment — can't be scripted headlessly. Clerk needs a dashboard-created app with its Convex integration activated to get `VITE_CLERK_PUBLISHABLE_KEY` (frontend) and `CLERK_JWT_ISSUER_DOMAIN` (set via `bunx convex env set`, backend).
+
+Invite-only sign-up adds four one-time setup steps, all outside this codebase:
+1. `bunx convex env set CLERK_SECRET_KEY sk_...` — the Backend API key `convex/invites.ts` sends invitations with. Never commit it or put it in `.env.local`'s `VITE_*` space.
+2. `bunx convex env set APP_URL https://your-host` — the origin Clerk's invitation email links back to (`{APP_URL}/register`).
+3. Clerk dashboard → **Restrictions → Sign-up mode: Restricted**. Without this, Clerk itself would still let an uninvited address sign up (the app-side gate in `users.completeProfile` would then turn them away after account creation — correct, but a worse experience).
+4. Clerk dashboard → JWT template **convex** must include `email`. The gate matches invitations against `identity.email`; without the claim nobody can enrol.
+
+Note `bunx convex dev` in this repo reads a **production** `CONVEX_DEPLOY_KEY` from `apps/web/.env.local` — it pushes to prod, not to a dev deployment. Check `CONVEX_DEPLOYMENT` before running it.
 
 No seed script yet for the Convex backend (the old `bun run db:seed` was SQLite-specific and lived in the now-retired `apps/api`) — fresh Convex deployments start empty.
 
@@ -105,6 +115,7 @@ P0-P3 (original Hono/SQLite build) and P6 (Convex/Clerk rewrite) are complete an
 - Don't let the script face (Pinyon Script) appear anywhere but the wordmark — once per page, never in UI, never small.
 - Don't put text labels on post actions — they're Phosphor icons with counts. A row of words under every post was a specific thing that got rebuilt.
 - Don't expose `bookmarks` for any handle other than the requesting user, ever — likes are public (classic Twitter behavior), bookmarks are not (`docs/ARCHITECTURE.md` §7b). Convex functions enforce this by never accepting a userId argument for bookmarks, not by a permission check that could be forgotten.
+- Don't add a sign-up path that admits whoever holds an invite code, or one that lets a user pick the email an invitation is matched against — the email→identity match in `users.completeProfile` is the whole gate (`docs/ARCHITECTURE.md` §9).
 - Don't add a Convex mutation that skips rate limiting because it "seems low-risk" — check `convex/lib/rateLimits.ts` for the existing buckets before deciding a new one is needed.
 
 ## 10. Active plan

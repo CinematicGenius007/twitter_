@@ -94,5 +94,18 @@ User asked to make the app production-hostable: real auth, security, rate limiti
 - [x] Bug found + fixed during browser verification: `useAuth()`'s `user` object was rebuilt (new reference) on every render since `mapUser()` wasn't memoized, which made `EditProfilePage`'s `useEffect([user])` refire and clobber in-progress edits on every keystroke. Fixed with `useMemo` keyed on the underlying Convex query result.
 - [ ] Deploy to Convex prod + Vercel — not done yet, next up
 
+## P7 — Invite-only sign-up (Depends on: P6) — code complete, end-to-end unverified
+
+User decision (2026-08-05): close public sign-up. Accounts exist only by invitation, and every invitation is addressed to one email. See `docs/ARCHITECTURE.md` §9 for the model and `docs/LOG.md` for the session narrative.
+
+- [x] `invites` table + `users.invitedBy` / `users.inviteAllowance` (`convex/schema.ts`), indexes by_code / by_email / by_email_status / by_inviter
+- [x] `convex/lib/invites.ts` — allowance, expiry, masking, `getIdentityEmail`, `findUsableInviteForEmail`
+- [x] `convex/invites.ts` — `mine` / `getByCode` / `myEligibility` queries, internal mutations (reserve → attachClerk → discard, markRevoked, beginResend), `send` / `revoke` / `resend` actions against Clerk's Backend API, `sendInvite` rate-limit bucket (5/hour)
+- [x] `users.completeProfile` gated on a pending invite matching the caller's Clerk-verified email; founder exception for an empty deployment; invite spent in the same transaction as the profile insert
+- [x] Frontend: `/invitations` (Letters of Introduction — send, copy link, resend, withdraw, allowance), `/invitation/:code` public landing, invite-aware `RegisterPage` (ticket-gated), `LoginPage` note, `CompleteProfilePage` refusal state, nav entry
+- [x] Build + lint clean; `/register` and `/invitation/:code` refusal states verified in-browser
+- [ ] **Manual setup, blocks the feature working at all**: `bunx convex env set CLERK_SECRET_KEY sk_...`, `bunx convex env set APP_URL https://...`, Clerk dashboard sign-up mode → Restricted, `email` claim in the Clerk `convex` JWT template. See `CLAUDE.md` §7
+- [ ] End-to-end verification once the above is set: send an invite → receive the email → accept → `/complete-profile` → account created, invite marked taken up; plus the negative cases (uninvited address refused, revoked link refused, second use of a spent invite refused)
+
 ---
-_Last updated: 2026-08-02. P0-P3 complete (Hono/SQLite backend, since replaced). P6 Convex + Clerk rewrite complete and verified in-browser — read `docs/ARCHITECTURE.md` for the current (Convex) schema before touching data model or API surface. `apps/api` lives on read-only in `legacy/api-hono-sqlite/` for reference._
+_Last updated: 2026-08-05. P0-P3 complete (Hono/SQLite backend, since replaced). P6 Convex + Clerk rewrite complete and verified in-browser — read `docs/ARCHITECTURE.md` for the current (Convex) schema before touching data model or API surface. `apps/api` lives on read-only in `legacy/api-hono-sqlite/` for reference._

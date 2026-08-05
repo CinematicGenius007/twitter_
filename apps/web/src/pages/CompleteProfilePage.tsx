@@ -1,12 +1,19 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
+import { useClerk } from "@clerk/clerk-react";
 import { api } from "../../convex/_generated/api";
 import { Button, Field, inputClass } from "../components/Button";
 import { Fleuron } from "../components/Ornament";
+import { LoadingSheets } from "../components/States";
 
 export function CompleteProfilePage() {
   const completeProfile = useMutation(api.users.completeProfile);
+  // The same gate `users.completeProfile` enforces, asked ahead of time so a
+  // visitor without a letter gets an explanation rather than a form that will
+  // reject them (convex/invites.ts myEligibility).
+  const eligibility = useQuery(api.invites.myEligibility, {});
+  const { signOut } = useClerk();
   const navigate = useNavigate();
   const [handle, setHandle] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -25,6 +32,36 @@ export function CompleteProfilePage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (eligibility === undefined) return <LoadingSheets count={1} />;
+
+  if (!eligibility.eligible) {
+    const body =
+      eligibility.reason === "no-verified-email"
+        ? "Penny Post needs a verified email address on your account before it can match you to a letter of introduction."
+        : "Penny Post admits new correspondents only on the introduction of an existing subscriber, and this address has no letter outstanding.";
+    return (
+      <div className="max-w-sm mx-auto py-8">
+        <div className="text-center mb-6">
+          <h1 className="font-display font-black text-xl text-ink">Not on the List</h1>
+          <Fleuron className="max-w-[140px] mx-auto mt-3" />
+        </div>
+        <div className="sheet p-6 text-center">
+          <p className="text-sm text-ink leading-relaxed">{body}</p>
+          {eligibility.email && (
+            <p className="text-2xs text-ink-faint mt-3">Signed in as {eligibility.email}</p>
+          )}
+          <div className="my-5 h-px bg-rule" />
+          <p className="text-xs text-ink-soft">
+            If a letter was sent to a different address, sign off and come back through that one.
+          </p>
+          <Button variant="secondary" className="mt-4" onClick={() => void signOut()}>
+            Sign off
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (

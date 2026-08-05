@@ -63,6 +63,7 @@ A user's timeline is therefore: their own tweets UNION tweets retweeted by them 
 | `mentions` | id, tweet_id, mentioned_user_id | Parsed from `body` (`@handle`) at write time, not read time — makes profile "tagged in" queries and future notifications a plain indexed lookup instead of a regex scan per read. This is "tagging" from the brief. |
 | `hashtags` | id, tag (unique, lowercase, no `#`) | |
 | `tweet_hashtags` | tweet_id, hashtag_id | Join table. Parsed from `body` (`#word`) at write time, same reasoning as mentions. No counter trigger — hashtag feed is a plain join query, not hot enough at this scale to denormalize. |
+| `invites` | email, code, inviter_id, clerk_invitation_id, clerk_ticket_url, status (pending/accepted/revoked), created_at, expires_at, accepted_at, accepted_user_id | Added 2026-08-05 with invite-only sign-up — see §9. Bound to an **email**, not to the link: the row is matched against the Clerk identity's verified email at `users.completeProfile`, so a leaked link admits nobody. `users` gains `invited_by` and an optional `invite_allowance` override. |
 
 `replies_count` on a tweet = `COUNT(*) WHERE parent_tweet_id = tweet.id` — maintained by trigger on `tweets` insert/delete, same pattern as likes.
 
@@ -109,5 +110,45 @@ Both are independent of liking/bookmarking flow — bookmarking a tweet never re
 - MySQL-specific syntax (`DELIMITER`, `express-mysql-session`) — SQLite triggers use the same `AFTER INSERT/DELETE` shape but SQLite's own syntax.
 - Single nullable `media` varchar per tweet (superseded by `tweet_media`, §3).
 
+## 9. Invite-only access (added 2026-08-05)
+
+Public sign-up is closed. An account exists only because an existing subscriber
+addressed an invitation to a specific email.
+
+**Two enforcement layers, on purpose:**
+
+1. **Clerk restricted sign-up mode + Clerk invitations.** Clerk refuses an
+   uninvited address at the door, sends the email, and verifies the address as
+   part of accepting. No email provider and no token-minting in this codebase.
+2. **`users.completeProfile` (`convex/users.ts`).** Refuses to insert a `users`
+   row unless a pending, unexpired `invites` row matches the caller's own
+   Clerk-verified email. This is the layer that actually holds: it's the only
+   code path that can mint a profile, so the rule survives someone flipping the
+   Clerk dashboard back to public.
+
+**The invitation binds to the email, not to the URL.** Codes are unguessable
+and the landing page reveals only a masked address, but even a fully leaked
+link is inert — Clerk creates the account with the invited address, and the
+gate matches on that address.
+
+**Lifecycle.** `pending → accepted | revoked`, plus expired-by-time (30 days,
+matching the Clerk invitation's own life). Accepting the invite and creating
+the profile happen in one Convex mutation, so one letter can never admit two
+accounts. Allowance is 5 per member (`invites.INVITE_ALLOWANCE`, overridable
+per user via `users.inviteAllowance`); revoked and lapsed letters are refunded,
+accepted and outstanding ones are not. The first account on an empty
+deployment is the founder and needs no invite — that branch is unreachable
+once any user exists.
+
+**Actions vs mutations.** Everything touching Clerk's Backend API lives in
+`convex/invites.ts` actions (`send`/`revoke`/`resend`); the transactional half
+(allowance check, row insert, revoke, rollback) is in internal mutations the
+actions call. The row is reserved *before* the Clerk call so two concurrent
+sends can't both pass the allowance check, and discarded if Clerk then refuses.
+
+**Deployment prerequisites** (see `CLAUDE.md` §7): `CLERK_SECRET_KEY` and
+`APP_URL` set on the Convex deployment, sign-up mode set to Restricted in the
+Clerk dashboard, and `email` present in the Clerk "convex" JWT template.
+
 ---
-_Last updated: 2026-08-02. Storage layer ported from SQLite (`apps/api`, retired to `legacy/api-hono-sqlite/`) to Convex (`apps/web/convex/schema.ts`) as part of a Clerk+Convex production rewrite — see the storage-layer note near the top, and §5/§6 for what changed. Domain model itself (entities, relationships, scope decisions) is unchanged from the prior SQLite-era update: hashtags in v1 scope, profile fields + owner-only edit, never-list for DM/lists/spaces/private-accounts/edit-history, likes/bookmarks owner-view notes._
+_Last updated: 2026-08-05 (§9 invite-only access, `invites` table in §3). Storage layer ported from SQLite (`apps/api`, retired to `legacy/api-hono-sqlite/`) to Convex (`apps/web/convex/schema.ts`) as part of a Clerk+Convex production rewrite — see the storage-layer note near the top, and §5/§6 for what changed. Domain model itself (entities, relationships, scope decisions) is unchanged from the prior SQLite-era update: hashtags in v1 scope, profile fields + owner-only edit, never-list for DM/lists/spaces/private-accounts/edit-history, likes/bookmarks owner-view notes._
